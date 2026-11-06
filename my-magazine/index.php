@@ -1,0 +1,19 @@
+<?php
+require_once __DIR__ . '/config/app.php';
+$pageTitle = 'Latest News & Features';
+$featured = $pdo->query("SELECT a.*, c.name category_name, u.name author_name FROM articles a LEFT JOIN categories c ON c.id=a.category_id LEFT JOIN users u ON u.id=a.author_id WHERE a.status='published' AND a.is_featured=1 AND a.published_at<=NOW() ORDER BY a.published_at DESC LIMIT 1")->fetch();
+$latest = $pdo->query("SELECT a.*, c.name category_name, u.name author_name FROM articles a LEFT JOIN categories c ON c.id=a.category_id LEFT JOIN users u ON u.id=a.author_id WHERE a.status='published' AND a.published_at<=NOW() ORDER BY a.published_at DESC LIMIT 9")->fetchAll();
+$popular = $pdo->query("SELECT a.*, c.name category_name FROM articles a LEFT JOIN categories c ON c.id=a.category_id WHERE a.status='published' AND a.published_at<=NOW() ORDER BY a.views DESC, a.published_at DESC LIMIT 5")->fetchAll();
+require ROOT_PATH . '/includes/header.php';
+?>
+<div class="container">
+<section class="section-heading"><div><span class="eyebrow">THE DAILY EDITION</span><h1>Ideas, stories &amp; <em>perspectives.</em></h1></div><p>Discover the latest news, culture, business, lifestyle and stories shaping our world.</p></section>
+<?php if ($featured): ?>
+<section class="hero-feature"><a class="hero-image" href="<?= url('article.php?slug=' . urlencode($featured['slug'])) ?>"><img src="<?= article_image($featured['featured_image']) ?>" alt="<?= e($featured['title']) ?>"></a><div class="hero-copy"><span class="category-label"><?= e($featured['category_name'] ?? 'Featured') ?></span><h2><a href="<?= url('article.php?slug=' . urlencode($featured['slug'])) ?>"><?= e($featured['title']) ?></a></h2><p><?= e(excerpt($featured['excerpt'] ?: $featured['content'], 220)) ?></p><div class="byline">By <?= e($featured['author_name'] ?? 'Editorial Team') ?> <span>•</span> <?= format_date($featured['published_at']) ?></div><a class="text-link" href="<?= url('article.php?slug=' . urlencode($featured['slug'])) ?>">Read the story <span>→</span></a></div></section>
+<?php endif; ?>
+<div class="content-layout"><section><div class="section-title"><div><span class="eyebrow">FRESH OFF THE PRESS</span><h2>Latest stories</h2></div><a class="text-link" href="<?= url('search.php') ?>">View all →</a></div>
+<div class="article-grid"><?php foreach ($latest as $i => $article): ?><article class="article-card"><a class="card-image" href="<?= url('article.php?slug=' . urlencode($article['slug'])) ?>"><img loading="lazy" src="<?= article_image($article['featured_image']) ?>" alt="<?= e($article['title']) ?>"></a><div class="card-body"><span class="category-label"><?= e($article['category_name'] ?? 'News') ?></span><h3><a href="<?= url('article.php?slug=' . urlencode($article['slug'])) ?>"><?= e($article['title']) ?></a></h3><p><?= e(excerpt($article['excerpt'] ?: $article['content'], 105)) ?></p><div class="byline"><?= e($article['author_name'] ?? 'Editorial Team') ?> <span>•</span> <?= format_date($article['published_at']) ?></div></div></article><?php endforeach; ?></div>
+<?php if (!$latest): ?><div class="empty-state"><h3>Your magazine is ready for its first story.</h3><p>Sign in to the admin dashboard and publish an article.</p></div><?php endif; ?>
+</section><aside class="sidebar"><div class="sidebar-block"><span class="eyebrow">MOST READ</span><h2>Popular stories</h2><?php foreach ($popular as $i => $item): ?><a class="popular-item" href="<?= url('article.php?slug=' . urlencode($item['slug'])) ?>"><b><?= str_pad((string)($i+1), 2, '0', STR_PAD_LEFT) ?></b><span><small><?= e($item['category_name'] ?? 'News') ?></small><?= e($item['title']) ?></span></a><?php endforeach; ?></div><div class="newsletter"><span class="eyebrow">THE GOOD READ</span><h3>A little perspective in your inbox.</h3><p>Our newsletter feature is coming soon.</p></div></aside></div>
+</div>
+<?php require ROOT_PATH . '/includes/footer.php'; ?>

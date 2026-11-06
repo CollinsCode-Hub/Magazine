@@ -1,0 +1,11 @@
+<?php
+require_once __DIR__.'/_init.php';require_role(['admin','editor']);
+$error='';
+if($_SERVER['REQUEST_METHOD']==='POST'){verify_csrf();$op=$_POST['op']??'save';if($op==='delete'){$pdo->prepare('DELETE FROM categories WHERE id=?')->execute([(int)$_POST['id']]);redirect('admin/categories.php');}
+$name=trim($_POST['name']??'');$slug=slugify(trim($_POST['slug']??'')?:$name);$desc=trim($_POST['description']??'');$id=(int)($_POST['id']??0);
+if($name){if($id)$pdo->prepare('UPDATE categories SET name=?,slug=?,description=? WHERE id=?')->execute([$name,$slug,$desc,$id]);else $pdo->prepare('INSERT INTO categories(name,slug,description) VALUES(?,?,?)')->execute([$name,$slug,$desc]);redirect('admin/categories.php');}else $error='Category name is required.';}
+$edit=null;if(isset($_GET['edit'])){$s=$pdo->prepare('SELECT * FROM categories WHERE id=?');$s->execute([(int)$_GET['edit']]);$edit=$s->fetch();}
+$adminTitle='Categories';require __DIR__.'/header.php';
+?>
+<?php if($error): ?><p class="error"><?= e($error) ?></p><?php endif; ?><div class="admin-panel"><h2><?= $edit?'Edit category':'Add category' ?></h2><form method="post" class="admin-form"><?= csrf_field() ?><input type="hidden" name="id" value="<?= $edit['id']??0 ?>"><label>Category name<input name="name" required value="<?= e($edit['name']??'') ?>"></label><label>Slug<input name="slug" value="<?= e($edit['slug']??'') ?>"></label><label>Description<textarea name="description"><?= e($edit['description']??'') ?></textarea></label><button class="btn">Save category</button></form></div><div class="admin-panel"><h2>All categories</h2><div class="table-wrap"><table><thead><tr><th>Name</th><th>Slug</th><th>Actions</th></tr></thead><tbody><?php foreach($pdo->query('SELECT * FROM categories ORDER BY name') as $c): ?><tr><td><?= e($c['name']) ?></td><td><?= e($c['slug']) ?></td><td class="actions"><a href="<?= url('admin/categories.php?edit='.$c['id']) ?>">Edit</a><form method="post" onsubmit="return confirm('Delete category?')"><?= csrf_field() ?><input type="hidden" name="op" value="delete"><input type="hidden" name="id" value="<?= $c['id'] ?>"><button class="link-danger">Delete</button></form></td></tr><?php endforeach; ?></tbody></table></div></div>
+<?php require __DIR__.'/footer.php'; ?>
